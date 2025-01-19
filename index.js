@@ -98,6 +98,21 @@ async function run() {
             res.send(result);
         })
 
+        // Update cart item quantity and totalPrice
+        app.put('/carts/:id', async (req, res) => {
+            const id = req.params.id;
+            const { quantity, totalPrice } = req.body;
+
+            const result = await cartCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { quantity: quantity, totalPrice: totalPrice } }
+            );
+
+            res.send(result);
+        });
+
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
