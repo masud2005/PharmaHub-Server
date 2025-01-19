@@ -27,9 +27,22 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
+        const medicineCollection = client.db('PharmaHub').collection('medicines');
         const userCollection = client.db('PharmaHub').collection('users');
+        const cartCollection = client.db('PharmaHub').collection('carts');
 
-        // Users Relate API
+        // ----Medicine APIs----
+
+        // Get all medicines
+        app.get('/medicines', async (req, res) => {
+            const result = await medicineCollection.find().toArray();
+            res.send(result);
+        })
+
+
+        // ----Users APIs----
+
+        // Get all users
         app.get('/users', async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
@@ -51,6 +64,14 @@ async function run() {
             res.send(result);
         });
 
+
+        // ----Cart Related APIs----
+        // Add Cart
+        app.post('/carts', async(req, res) => {
+            const cartItem = req.body;
+            const result = await cartCollection.insertOne(cartItem);
+            res.send(result);
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
