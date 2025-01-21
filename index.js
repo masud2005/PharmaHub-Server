@@ -148,11 +148,28 @@ async function run() {
             res.send({ paymentResult, deleteResult })
         })
 
+        // All Payments
+        app.get('/payments', async (req, res) => {
+            const result = await paymentCollection.find().toArray();
+            res.send(result);
+        })
+
         // Get Specific User ALl Payment
-        app.get('/payments/:email', async(req, res) => {
+        app.get('/payments/:email', async (req, res) => {
             const email = req.params.email;
-            const query = {email: email}
+            const query = { email: email }
             const result = await paymentCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // Update Payment Status
+        app.patch('/payments/:id', async (req, res) => {
+            const { id } = req.params;
+            const { status } = req.body;
+            const result = await paymentCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status: status } }
+            )
             res.send(result);
         })
 
