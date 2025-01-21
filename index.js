@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-require('dotenv').config()
+require('dotenv').config();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -30,6 +31,7 @@ async function run() {
         const medicineCollection = client.db('PharmaHub').collection('medicines');
         const userCollection = client.db('PharmaHub').collection('users');
         const cartCollection = client.db('PharmaHub').collection('carts');
+        const paymentCollection = client.db('PharmaHub').collection('payments');
 
         // ----Medicine APIs----
 
@@ -111,6 +113,41 @@ async function run() {
             res.send(result);
         });
 
+
+        // ----Cart Related APIs----
+        // payment intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            // console.log(amount, 'amount inside the intent')
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        });
+
+        // Payment save in the database
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const paymentResult = await paymentCollection.insertOne(payment);
+
+            // Carefully delete each item from the cart
+            // console.log('Payment info', payment);
+            // const query = {
+            //     _id: {
+            //         $in: payment.cartIds.map(id => new ObjectId(id))
+            //     }
+            // };
+            // const deleteResult = await cartCollection.deleteMany(query);
+
+            res.send({ paymentResult })
+        })
 
 
         // Send a ping to confirm a successful connection
