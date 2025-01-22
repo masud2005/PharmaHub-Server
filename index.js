@@ -40,6 +40,11 @@ async function run() {
             const result = await medicineCollection.find().toArray();
             res.send(result);
         })
+        app.post('/medicines', async (req, res) => {
+            const medicine = req.body;
+            const result = await medicineCollection.insertOne(medicine);
+            res.send(result)
+        })
 
 
         // ----Users APIs----
