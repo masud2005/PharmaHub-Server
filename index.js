@@ -40,6 +40,16 @@ async function run() {
             const result = await medicineCollection.find().toArray();
             res.send(result);
         })
+
+        // Get Specific Seller Medicine
+        app.get('/medicines/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { sellerEmail: email }
+            const result = await medicineCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // Add Medicine
         app.post('/medicines', async (req, res) => {
             const medicine = req.body;
             const result = await medicineCollection.insertOne(medicine);
