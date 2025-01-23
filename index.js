@@ -154,6 +154,44 @@ async function run() {
             })
         });
 
+        // app.post('/create-payment-intent', async (req, res) => {
+        //     try {
+        //         const { price } = req.body;
+
+        //         // Ensure price is valid and within limits
+        //         if (!price || isNaN(price) || price <= 0) {
+        //             return res.status(400).send({ error: 'Invalid price value' });
+        //         }
+
+        //         // Convert price to cents
+        //         const amount = Math.round(price * 100);
+
+        //         // Ensure amount is within Stripe's allowed limits
+        //         if (amount > 99999999) {
+        //             return res.status(400).send({
+        //                 error: 'Amount exceeds the maximum allowed value of $999,999.99'
+        //             });
+        //         }
+
+        //         console.log(amount, 'amount inside the intent');
+
+        //         // Create payment intent
+        //         const paymentIntent = await stripe.paymentIntents.create({
+        //             amount: amount,
+        //             currency: 'usd',
+        //             payment_method_types: ['card']
+        //         });
+
+        //         res.send({
+        //             clientSecret: paymentIntent.client_secret
+        //         });
+        //     } catch (error) {
+        //         console.error(error);
+        //         res.status(500).send({ error: 'Internal Server Error' });
+        //     }
+        // });
+
+
         // Payment save in the database
         app.post('/payments', async (req, res) => {
             const payment = req.body;
@@ -176,13 +214,39 @@ async function run() {
             res.send(result);
         })
 
-        // Get Specific User ALl Payment
+        // Get Specific User All Payment History
         app.get('/payments/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const result = await paymentCollection.find(query).toArray();
             res.send(result);
         })
+
+        // Get Specific Seller All Payment History
+        app.get('/seller-pay-history/:email', async (req, res) => {
+
+            const email = req.params.email;
+
+            // Query to check if the sellerEmail array contains the given email
+            const query = { sellerEmail: { $in: [email] } };
+
+            // Fetch payment history for the seller
+            const payments = await paymentCollection.find(query).toArray();
+
+            // Response formatting
+            const formattedPayments = payments.map(payment => ({
+                transactionId: payment.transactionId,
+                buyerEmail: payment.email,
+                medicineName: payment.medicinesName,
+                // cartIds: payment.cartIds,
+                totalPrice: payment.price,
+                status: payment.status,
+            }));
+
+            res.send(formattedPayments);
+        });
+
+
 
         // Update Payment Status
         app.patch('/payments/:id', async (req, res) => {
