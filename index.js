@@ -136,21 +136,27 @@ async function run() {
             res.send(result);
         });
 
-        
-        // Advertise
+
+        // ----Advertise Related APIs----
+
+        // Get All Advertise
+        app.get('/seller-advertise', async (req, res) => {
+            const sellerEmail = req.query.sellerEmail;
+            const query = { sellerEmail: sellerEmail }
+            const result = await sellerAdvertiseCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        // Added Advertise
         app.post('/seller-advertise', async (req, res) => {
             const advertise = req.body;
             const result = await sellerAdvertiseCollection.insertOne(advertise);
             res.send(result);
         })
 
-        app.get('/seller-advertise', async(req, res) => {
-            const result = await sellerAdvertiseCollection.find().toArray();
-            res.send(result);
-        })
-
 
         // ----Payment Related APIs----
+
         // payment intent
         app.post('/create-payment-intent', async (req, res) => {
             const { price } = req.body;
@@ -236,6 +242,39 @@ async function run() {
         // Admin dashboard using aggregation
         app.get('/admin-stats', async (req, res) => {
             const result = await paymentCollection.aggregate([
+                {
+                    $facet: {
+                        totalRevenue: [
+                            { $group: { _id: null, totalAmount: { $sum: "$price" } } }
+                        ],
+                        paidTotal: [
+                            { $match: { status: "Paid" } },
+                            { $group: { _id: null, totalAmount: { $sum: "$price" } } }
+                        ],
+                        pendingTotal: [
+                            { $match: { status: "Pending" } },
+                            { $group: { _id: null, totalAmount: { $sum: "$price" } } }
+                        ]
+                    }
+                }
+            ]).toArray();
+
+            res.send({
+                totalRevenue: result[0].totalRevenue[0]?.totalAmount || 0,
+                paidTotal: result[0].paidTotal[0]?.totalAmount || 0,
+                pendingTotal: result[0].pendingTotal[0]?.totalAmount || 0,
+            });
+        });
+
+        // Seller dashboard using aggregation
+        app.get('/seller-stats', async (req, res) => {
+            const sellerEmail = req.query.sellerEmail;
+
+
+            const result = await paymentCollection.aggregate([
+                {
+                    $match: { sellerEmail: sellerEmail } // Filter products by sellerEmail
+                },
                 {
                     $facet: {
                         totalRevenue: [
