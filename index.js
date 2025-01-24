@@ -32,6 +32,7 @@ async function run() {
         const userCollection = client.db('PharmaHub').collection('users');
         const cartCollection = client.db('PharmaHub').collection('carts');
         const paymentCollection = client.db('PharmaHub').collection('payments');
+        const sellerAdvertiseCollection = client.db('PharmaHub').collection('sellerAdvertise');
 
         // ----Medicine APIs----
 
@@ -135,6 +136,19 @@ async function run() {
             res.send(result);
         });
 
+        
+        // Advertise
+        app.post('/seller-advertise', async (req, res) => {
+            const advertise = req.body;
+            const result = await sellerAdvertiseCollection.insertOne(advertise);
+            res.send(result);
+        })
+
+        app.get('/seller-advertise', async(req, res) => {
+            const result = await sellerAdvertiseCollection.find().toArray();
+            res.send(result);
+        })
+
 
         // ----Payment Related APIs----
         // payment intent
@@ -153,44 +167,6 @@ async function run() {
                 clientSecret: paymentIntent.client_secret
             })
         });
-
-        // app.post('/create-payment-intent', async (req, res) => {
-        //     try {
-        //         const { price } = req.body;
-
-        //         // Ensure price is valid and within limits
-        //         if (!price || isNaN(price) || price <= 0) {
-        //             return res.status(400).send({ error: 'Invalid price value' });
-        //         }
-
-        //         // Convert price to cents
-        //         const amount = Math.round(price * 100);
-
-        //         // Ensure amount is within Stripe's allowed limits
-        //         if (amount > 99999999) {
-        //             return res.status(400).send({
-        //                 error: 'Amount exceeds the maximum allowed value of $999,999.99'
-        //             });
-        //         }
-
-        //         console.log(amount, 'amount inside the intent');
-
-        //         // Create payment intent
-        //         const paymentIntent = await stripe.paymentIntents.create({
-        //             amount: amount,
-        //             currency: 'usd',
-        //             payment_method_types: ['card']
-        //         });
-
-        //         res.send({
-        //             clientSecret: paymentIntent.client_secret
-        //         });
-        //     } catch (error) {
-        //         console.error(error);
-        //         res.status(500).send({ error: 'Internal Server Error' });
-        //     }
-        // });
-
 
         // Payment save in the database
         app.post('/payments', async (req, res) => {
@@ -246,8 +222,6 @@ async function run() {
             res.send(formattedPayments);
         });
 
-
-
         // Update Payment Status
         app.patch('/payments/:id', async (req, res) => {
             const { id } = req.params;
@@ -285,8 +259,6 @@ async function run() {
                 pendingTotal: result[0].pendingTotal[0]?.totalAmount || 0,
             });
         });
-
-
 
 
         // Send a ping to confirm a successful connection
