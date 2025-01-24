@@ -42,6 +42,14 @@ async function run() {
             res.send(result);
         })
 
+        // Get Specific Medicine by ID
+        app.get('/medicine/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await medicineCollection.findOne(query);
+            res.send(result);
+        })
+
         // Get Specific Seller Medicine
         app.get('/medicines/:email', async (req, res) => {
             const email = req.params.email;
@@ -55,6 +63,26 @@ async function run() {
             const medicine = req.body;
             const result = await medicineCollection.insertOne(medicine);
             res.send(result)
+        })
+
+        // Update Specific Medicine
+        app.patch('/medicines/:id', async (req, res) => {
+            const { id } = req.params;
+            const categoryInfo = req.body;
+
+            const result = await medicineCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: categoryInfo }
+            )
+            res.send(result)
+        })
+
+        // Delete Specific medicine
+        app.delete('/medicines/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await medicineCollection.deleteOne(query);
+            res.send(result);
         })
 
 
@@ -239,6 +267,9 @@ async function run() {
             res.send(result);
         })
 
+
+        // ----Stats Related APIs----
+
         // Admin dashboard using aggregation
         app.get('/admin-stats', async (req, res) => {
             const result = await paymentCollection.aggregate([
@@ -273,7 +304,7 @@ async function run() {
 
             const result = await paymentCollection.aggregate([
                 {
-                    $match: { sellerEmail: sellerEmail } // Filter products by sellerEmail
+                    $match: { sellerEmail: sellerEmail }
                 },
                 {
                     $facet: {
