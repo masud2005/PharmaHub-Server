@@ -85,6 +85,33 @@ async function run() {
             res.send(result);
         })
 
+        // Category Related APIs
+        // Get categories with medicine count
+        app.get('/categories', async (req, res) => {
+            const categories = await medicineCollection.aggregate([
+                {
+                    $group: {
+                        _id: "$category",
+                        count: { $sum: 1 },
+                        imageURL: { $first: "$imageURL" }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        category: "$_id",
+                        count: 1,
+                        imageURL: 1
+                    }
+                }
+            ]).toArray();
+
+            res.send(categories);
+        });
+
+        
+
+
 
         // ----Users APIs----
 
