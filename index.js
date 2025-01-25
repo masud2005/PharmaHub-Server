@@ -168,6 +168,12 @@ async function run() {
         // ----Advertise Related APIs----
 
         // Get All Advertise
+        app.get('/all-advertise', async (req, res) => {
+            const result = await sellerAdvertiseCollection.find().toArray();
+            res.send(result);
+        })
+
+        // Get Specific Seller Advertise
         app.get('/seller-advertise', async (req, res) => {
             const sellerEmail = req.query.sellerEmail;
             const query = { sellerEmail: sellerEmail }
@@ -180,6 +186,18 @@ async function run() {
             const advertise = req.body;
             const result = await sellerAdvertiseCollection.insertOne(advertise);
             res.send(result);
+        })
+
+        // Update Advertise
+        app.patch('/all-advertise/:id', async (req, res) => {
+            const { id } = req.params;
+            const advertiseInfo = req.body;
+
+            const result = await sellerAdvertiseCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: advertiseInfo }
+            )
+            res.send(result)
         })
 
 
