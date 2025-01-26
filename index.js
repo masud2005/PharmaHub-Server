@@ -85,7 +85,9 @@ async function run() {
             res.send(result);
         })
 
-        // Category Related APIs
+
+        // ----Categories Related APIs----
+
         // Get categories with medicine count
         app.get('/categories', async (req, res) => {
             const categories = await medicineCollection.aggregate([
@@ -109,7 +111,13 @@ async function run() {
             res.send(categories);
         });
 
-        
+        // Get medicines by category
+        app.get('/categories/:category', async (req, res) => {
+            const category = req.params.category;
+            const query = { category: category }
+            const result = await medicineCollection.find(query).toArray();
+            res.send(result);
+        })
 
 
 
@@ -199,6 +207,14 @@ async function run() {
             const result = await sellerAdvertiseCollection.find().toArray();
             res.send(result);
         })
+
+        // Only Admin Approve Advertise
+        app.get('/approved-advertise', async (req, res) => {
+            const result = await sellerAdvertiseCollection.find(
+                { status: "Approved" }
+            ).toArray();
+            res.send(result);
+        });
 
         // Get Specific Seller Advertise
         app.get('/seller-advertise', async (req, res) => {
