@@ -58,6 +58,12 @@ async function run() {
             res.send(result);
         })
 
+        // Discounted Medicines
+        app.get('/discounted-medicines', async (req, res) => {
+            const result = await medicineCollection.find({ discountPercentage: { $gt: 0 } }).toArray();
+            res.send(result);
+        })
+
         // Add Medicine
         app.post('/medicines', async (req, res) => {
             const medicine = req.body;
