@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
@@ -34,6 +35,54 @@ async function run() {
         const paymentCollection = client.db('PharmaHub').collection('payments');
         const sellerAdvertiseCollection = client.db('PharmaHub').collection('sellerAdvertise');
 
+        // ----JWT APIs----
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_SECRET_TOKEN, { expiresIn: '1h' });
+            res.send({ token });
+        })
+
+        // Custom Middleware
+        const verifyToken = (req, res, next) => {
+            // console.log('Inside verify token', req.headers.authorization);
+            if (!req.headers.authorization) {
+                return res.status(401).send({ message: 'unauthorized access' });
+            }
+            const token = req.headers.authorization.split(' ')[1];
+            jwt.verify(token, process.env.ACCESS_SECRET_TOKEN, (err, decoded) => {
+                if (err) {
+                    return res.status(401).send({ message: 'unauthorized access' });
+                }
+                req.decoded = decoded;
+                next();
+            })
+        }
+
+        // use verify admin after verifyToken
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            const isAdmin = user?.role === 'Admin';
+            if (!isAdmin) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            next();
+        }
+
+        // use verify admin after verifyToken
+        const verifySeller = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const user = await userCollection.findOne(query);
+            const isSeller = user?.role === 'Seller';
+            if (!isSeller) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            next();
+        }
+
         // ----Medicine APIs----
 
         // Get all medicines
@@ -51,7 +100,7 @@ async function run() {
         })
 
         // Get Specific Seller Medicine
-        app.get('/medicines/:email', async (req, res) => {
+        app.get('/medicines/:email', verifyToken, verifySeller, async (req, res) => {
             const email = req.params.email;
             const query = { sellerEmail: email }
             const result = await medicineCollection.find(query).toArray();
@@ -130,7 +179,9 @@ async function run() {
         // ----Users APIs----
 
         // Get all users
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+            // console.log(req.headers.authorization);
+
             const result = await userCollection.find().toArray();
             res.send(result);
         })
@@ -209,7 +260,7 @@ async function run() {
         // ----Advertise Related APIs----
 
         // Get All Advertise
-        app.get('/all-advertise', async (req, res) => {
+        app.get('/all-advertise', verifyToken, verifyAdmin, async (req, res) => {
             const result = await sellerAdvertiseCollection.find().toArray();
             res.send(result);
         })
@@ -223,7 +274,7 @@ async function run() {
         });
 
         // Get Specific Seller Advertise
-        app.get('/seller-advertise', async (req, res) => {
+        app.get('/seller-advertise', verifyToken, verifySeller, async (req, res) => {
             const sellerEmail = req.query.sellerEmail;
             const query = { sellerEmail: sellerEmail }
             const result = await sellerAdvertiseCollection.find(query).toArray();
@@ -231,7 +282,7 @@ async function run() {
         })
 
         // Added Advertise
-        app.post('/seller-advertise', async (req, res) => {
+        app.post('/seller-advertise', verifyToken, verifySeller, async (req, res) => {
             const advertise = req.body;
             const result = await sellerAdvertiseCollection.insertOne(advertise);
             res.send(result);
@@ -286,13 +337,13 @@ async function run() {
         })
 
         // All Payments
-        app.get('/payments', async (req, res) => {
+        app.get('/payments', verifyToken, verifyAdmin, async (req, res) => {
             const result = await paymentCollection.find().toArray();
             res.send(result);
         })
 
         // Get Specific User All Payment History
-        app.get('/payments/:email', async (req, res) => {
+        app.get('/payments/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
             const result = await paymentCollection.find(query).toArray();
@@ -338,7 +389,7 @@ async function run() {
         // ----Stats Related APIs----
 
         // Admin dashboard using aggregation
-        app.get('/admin-stats', async (req, res) => {
+        app.get('/admin-stats', verifyToken, verifyAdmin, async (req, res) => {
             const result = await paymentCollection.aggregate([
                 {
                     $facet: {
@@ -365,7 +416,7 @@ async function run() {
         });
 
         // Seller dashboard using aggregation
-        app.get('/seller-stats', async (req, res) => {
+        app.get('/seller-stats', verifyToken, verifySeller, async (req, res) => {
             const sellerEmail = req.query.sellerEmail;
 
 
