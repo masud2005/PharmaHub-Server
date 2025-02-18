@@ -91,6 +91,13 @@ async function run() {
             res.send(result);
         })
 
+        // Get the 8 most recent medicines
+        app.get('/featured-medicines', async (req, res) => {
+            const cursor = medicineCollection.find().limit(8);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
         // Get Specific Medicine by ID
         app.get('/medicine/:id', async (req, res) => {
             const id = req.params.id;
